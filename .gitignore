@@ -12,6 +12,9 @@ venv/
 
 # MLflow
 mlruns/
+*.h5
+*.keras
+
 
 # OS junk
 .DS_Store
