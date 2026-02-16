@@ -1,2 +1,19 @@
+# Data folders
 data/
 *.zip
+
+# Python cache
+__pycache__/
+*.pyc
+
+# Virtual env
+venv/
+.env
+
+# MLflow
+mlruns/
+
+# OS junk
+.DS_Store
+Thumbs.db
+
