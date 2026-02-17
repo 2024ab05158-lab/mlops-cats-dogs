@@ -1,0 +1,11 @@
+version: "3.9"
+
+services:
+  api:
+    image: cats-dogs-api
+    container_name: cats_dogs_service
+    ports:
+      - "8001:8000"
+    restart: always
+    environment:
+      - ENV=production
