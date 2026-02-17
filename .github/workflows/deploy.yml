@@ -9,10 +9,33 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout code
+        uses: actions/checkout@v4
 
-      - name: Build Docker Image
-        run: docker build -t cats-dogs-api .
+      - name: Set up Docker
+        uses: docker/setup-buildx-action@v3
 
-      - name: Smoke Test (simulated)
-        run: echo "CD pipeline executed"
+      - name: Build Docker image
+        run: |
+          docker build -t cats-dogs-api .
+
+      - name: Run container
+        run: |
+          docker run -d -p 8000:8000 --name api cats-dogs-api
+
+      - name: Wait for API to start
+        run: |
+          sleep 15
+
+      - name: Smoke test - health check
+        run: |
+          curl --fail http://localhost:8000/health
+
+      - name: Smoke test - prediction
+        run: |
+          curl --fail -X POST \
+            -F "file=@tests/sample.jpg" \
+            http://localhost:8000/predict
+
+      - name: Deployment successful
+        run: echo "CD pipeline passed!"
