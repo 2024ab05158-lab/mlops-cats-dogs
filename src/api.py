@@ -1,10 +1,16 @@
 import io
+import os
+import time
+import logging
+
 import numpy as np
 from PIL import Image
 from fastapi import FastAPI, File, UploadFile
 import tensorflow as tf
-import time
-import logging
+
+# =====================
+# LOGGING & METRICS
+# =====================
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger("inference")
@@ -12,11 +18,29 @@ logger = logging.getLogger("inference")
 REQUEST_COUNT = 0
 TOTAL_LATENCY = 0
 
+# =====================
+# MODEL LOADING (CI SAFE)
+# =====================
+
 MODEL_PATH = "model.keras"
-model = tf.keras.models.load_model(MODEL_PATH)
+model = None
+
+if os.path.exists(MODEL_PATH):
+    model = tf.keras.models.load_model(MODEL_PATH)
+    logger.info("Model loaded successfully")
+else:
+    logger.warning("Model not found — running in CI mode")
+
+# =====================
+# APP SETUP
+# =====================
 
 IMG_SIZE = 224
 app = FastAPI(title="Cats vs Dogs Classifier")
+
+# =====================
+# IMAGE PREPROCESS
+# =====================
 
 def preprocess_image(image: Image.Image):
     image = image.resize((IMG_SIZE, IMG_SIZE))
@@ -24,6 +48,9 @@ def preprocess_image(image: Image.Image):
     image = np.expand_dims(image, axis=0).astype("float32")
     return image
 
+# =====================
+# PREDICTION ENDPOINT
+# =====================
 
 @app.post("/predict")
 async def predict(file: UploadFile = File(...)):
@@ -34,6 +61,10 @@ async def predict(file: UploadFile = File(...)):
     contents = await file.read()
     image = Image.open(io.BytesIO(contents)).convert("RGB")
     img_tensor = preprocess_image(image)
+
+    # CI safety
+    if model is None:
+        return {"error": "Model not loaded (CI mode)"}
 
     prediction = model.predict(img_tensor)[0][0]
 
@@ -51,11 +82,17 @@ async def predict(file: UploadFile = File(...)):
         "confidence": round(confidence, 4)
     }
 
+# =====================
+# HEALTH CHECK
+# =====================
 
 @app.get("/health")
 def health():
     return {"status": "ok"}
 
+# =====================
+# METRICS
+# =====================
 
 @app.get("/metrics")
 def metrics():
