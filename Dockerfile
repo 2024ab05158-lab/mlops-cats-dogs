@@ -7,7 +7,7 @@ COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
 COPY src/ src/
-COPY model.keras .
+#COPY model.keras .
 
 EXPOSE 8000
 
